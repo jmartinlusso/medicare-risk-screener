@@ -38,6 +38,9 @@ A model that always predicts "negative" is 99.99% accurate, so accuracy is usele
 - **Open question:** `1128b4` (license revoked/suspended). It adds 42 positives (+28%), and a license is sometimes lost for
   overprescribing, but often for reasons unrelated to fraud.
 - **Drop** prescribers already excluded by the end of the feature year (41 here): they're neither positive nor negative.
+  At the end of 2019 their exclusion has already happened, so there's nothing to predict. Labeling them negative would
+  teach the model that an excluded prescriber's pattern looks "safe"; labeling them positive would be false.
+- Excluded after the window (after 2021): **negative** for this feature year.
 
 ## Quirks
 
@@ -50,8 +53,11 @@ A model that always predicts "negative" is 99.99% accurate, so accuracy is usele
    nothing to do with fraud. `1128b14` (defaulted student loan) and `1128a2` (patient abuse) are also not fraud.
 4. **Duplicate NPIs in the LEIE.** 1,475 matched rows but 1,453 distinct NPIs: one prescriber can have several exclusion
    rows. Build labels from distinct NPIs, or the join duplicates prescribers.
-5. **Excluded but still prescribing.** 2 prescribers were excluded before 2019 yet have 2019 Part D claims.
-   My explanation: TODO
+5. **Excluded but still prescribing (state waivers).** 2 prescribers excluded before 2019 (both `1128a1`, both
+   hematology-oncology, excluded 2015-06-18 and 2016-01-20) have 2019 Part D claims (1,879 and 11,470). Both have a
+   waiver state matching their Part D state (TX, NM), so they likely prescribe legally under a state waiver, typically
+   granted so patients keep access to a specialist. One record has `WAIVERDATE` = 0 despite its waiver state, so
+   `WVRSTATE` is a more reliable waiver signal than `WAIVERDATE`. Both are dropped from the labels as already excluded.
 6. **Dates and codes stored as numbers.** `EXCLDATE`, `REINDATE`, `WAIVERDATE` and `DOB` are YYYYMMDD integers: they sort
    like dates, but need converting for date arithmetic. `ZIP` loses leading zeros (02139 → 2139).
 7. **Later exclusions count as negatives.** 724 matched prescribers were excluded after 2021, outside the 2-year window, so
